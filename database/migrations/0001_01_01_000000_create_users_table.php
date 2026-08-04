@@ -13,11 +13,24 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
+            $table->string('identifier')->unique();
+            $table->enum('role', ['mahasiswa', 'dosen', 'admin']);
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('status', ['active', 'suspended'])->default('active');
             $table->rememberToken();
+            $table->timestamps();
+        });
+
+        Schema::create('sso_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->string('token', 64)->unique();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('app'); // siakad|lms|blog
+            $table->timestamp('expires_at');
+            $table->boolean('is_used')->default(false);
             $table->timestamps();
         });
 
