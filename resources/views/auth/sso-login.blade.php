@@ -48,7 +48,7 @@
         <button type="submit" class="btn-primary">Masuk</button>
 
         <div class="form-links">
-            <a href="#">Lupa kata sandi?</a>
+            <a href="{{route('password.request')}}">Lupa kata sandi?</a>
             <span style="color:#8FA79B;">v1 · SSO STT Cipasung</span>
         </div>
     </form>
