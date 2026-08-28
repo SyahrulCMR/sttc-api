@@ -2,6 +2,7 @@
 
 use App\Exceptions\BusinessException;
 use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\ResolveActiveRole;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -24,6 +25,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // Sanctum is route-scoped via auth:sanctum, no global middleware needed.
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
+        ]);
+
+        // Menentukan role aktif + injeksi scope `role:<slug>` sebelum Passport
+        // memproses /oauth/authorize (middleware mengabaikan route lain).
+        $middleware->web(append: [
+            ResolveActiveRole::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

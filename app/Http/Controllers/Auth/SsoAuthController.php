@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Actions\Auth\LoginThrottle;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\SsoSession;
@@ -11,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -35,22 +35,18 @@ class SsoAuthController extends Controller
             'app' => 'required|string',
         ]);
 
-        $throttleKey = 'login:'.$request->identifier.'|'.$request->ip();
-
-        // proteksi brute-force, pesan jelas kalau kena limit
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
-
-            throw ValidationException::withMessages([
-                'identifier' => "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik.",
-            ]);
-        }
+        $throttle = app(LoginThrottle::class);
+        $throttle->assertNotLocked($request->identifier, $request->ip());
 
         $user = User::where('identifier', $request->identifier)->first();
 
         // Kasus 1: akun tidak ditemukan / password salah
         if (! $user || ! Hash::check($request->password, $user->password)) {
-            RateLimiter::hit($throttleKey, 60); // lock progresif 60 detik per percobaan gagal
+            if (! $user) {
+                $throttle->equalizeTiming();
+            }
+
+            $throttle->recordFailure($request->identifier, $request->ip());
 
             throw ValidationException::withMessages([
                 'identifier' => 'NIM/NIDN atau password yang Anda masukkan salah.',
@@ -70,8 +66,8 @@ class SsoAuthController extends Controller
             ]);
         }
 
-        // login sukses → reset rate limiter
-        RateLimiter::clear($throttleKey);
+        // login sukses → reset counter L1 & L3 untuk identifier ini
+        $throttle->clear($request->identifier, $request->ip());
 
         auth()->login($user);
 

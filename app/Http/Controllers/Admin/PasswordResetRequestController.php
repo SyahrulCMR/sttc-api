@@ -43,9 +43,9 @@ class PasswordResetRequestController extends Controller
 
         // Update status request
         $resetRequest->update([
-            'status'     => 'approved',
-            'action_by'  => auth()->id(),
-            'admin_note' => $request->input('admin_note', 'Password sementara telah dibuat: ' . $temporaryPassword),
+            'status' => 'approved',
+            'action_by' => auth()->id(),
+            'admin_note' => $request->input('admin_note', 'Password sementara telah dibuat: '.$temporaryPassword),
         ]);
 
         return back()->with('success', "Password untuk {$user->name} ({$user->identifier}) berhasil di-reset menjadi: {$temporaryPassword}");
@@ -59,8 +59,8 @@ class PasswordResetRequestController extends Controller
         $request->validate(['admin_note' => 'required|string']);
 
         $resetRequest->update([
-            'status'     => 'rejected',
-            'action_by'  => auth()->id(),
+            'status' => 'rejected',
+            'action_by' => auth()->id(),
             'admin_note' => $request->admin_note,
         ]);
 

@@ -47,9 +47,9 @@ class PasswordResetLinkController extends Controller
 
         // Simpan pengajuan baru
         PasswordResetRequest::create([
-            'user_id'    => $user->id,
+            'user_id' => $user->id,
             'identifier' => $user->identifier,
-            'status'     => 'pending',
+            'status' => 'pending',
         ]);
 
         return back()->with('status', 'Pengajuan reset kata sandi berhasil dikirim. Silakan hubungi/tunggu verifikasi dari Administrator.');

@@ -42,6 +42,16 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // OAuth2 (Laravel Passport) — dipakai resource server & endpoint API ber-token SSO.
+        // Catatan: verifikasi token di sttc-siakad/sttc-website dilakukan LOKAL (JWKS),
+        // guard ini hanya untuk endpoint API milik sttc-api sendiri.
+        'api' => [
+            'driver' => 'passport',
+            'provider' => 'users',
+        ],
+
+        // 'sanctum' guard di-resolve otomatis oleh package untuk /api/v1/* (PAT lama).
     ],
 
     /*

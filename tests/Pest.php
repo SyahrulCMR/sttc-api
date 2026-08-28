@@ -1,6 +1,9 @@
 <?php
 
+use App\Models\OAuthClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Laravel\Passport\ClientRepository;
 use Tests\TestCase;
 
 /*
@@ -44,7 +47,39 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * PKCE verifier + S256 challenge.
+ *
+ * @return array{0: string, 1: string}
+ */
+function pkcePair(): array
 {
-    // ..
+    $verifier = Str::random(80);
+    $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
+
+    return [$verifier, $challenge];
+}
+
+/**
+ * Buat Auth Code + PKCE client (first-party, confidential) untuk test.
+ */
+function newAuthCodeClient(): OAuthClient
+{
+    return app(ClientRepository::class)->createAuthorizationCodeGrantClient(
+        name: 'Test Client',
+        redirectUris: ['https://client.test/callback'],
+        confidential: true,
+    );
+}
+
+/**
+ * Decode payload JWT tanpa verifikasi tanda tangan (untuk assertion di test).
+ *
+ * @return array<string, mixed>
+ */
+function decodeJwtPayload(string $jwt): array
+{
+    [, $payload] = explode('.', $jwt);
+
+    return json_decode(base64_decode(strtr($payload, '-_', '+/')), true);
 }
