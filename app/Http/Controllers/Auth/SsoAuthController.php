@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\SsoSession;
 use App\Models\SsoToken;
@@ -56,10 +57,16 @@ class SsoAuthController extends Controller
             ]);
         }
 
-        // Kasus 2: akun ditangguhkan
-        if ($user->status === 'suspended') {
+        // Kasus 2: akun ditangguhkan / tidak aktif
+        if ($user->status === UserStatus::Suspended) {
             throw ValidationException::withMessages([
                 'identifier' => 'Akun Anda sedang ditangguhkan. Silakan hubungi administrator sistem.',
+            ]);
+        }
+
+        if ($user->status === UserStatus::Inactive) {
+            throw ValidationException::withMessages([
+                'identifier' => 'Akun Anda sudah tidak aktif. Silakan hubungi administrator sistem.',
             ]);
         }
 
@@ -115,7 +122,8 @@ class SsoAuthController extends Controller
                 'identifier' => $user->identifier,
                 'name' => $user->name,
                 'email' => $user->email,
-                'role' => $user->role,
+                // Kolom `role` lama sudah deprecated -> fallback ke role pertama dari pivot.
+                'role' => $user->role ?? $user->roles->first()?->slug,
             ],
         ]);
     }

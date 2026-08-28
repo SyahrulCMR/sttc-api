@@ -18,9 +18,8 @@ Route::middleware('guest')->group(function () {
 });
 
 // Private Admin (Admin Memproses Pengajuan)
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:super-admin,admin-baak'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/password-requests', [PasswordResetRequestController::class, 'index'])->name('password-requests.index');
     Route::post('/password-requests/{resetRequest}/approve', [PasswordResetRequestController::class, 'approve'])->name('password-requests.approve');
     Route::post('/password-requests/{resetRequest}/reject', [PasswordResetRequestController::class, 'reject'])->name('password-requests.reject');
 });
-

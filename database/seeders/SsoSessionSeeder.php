@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Role as RoleEnum;
+use App\Models\Role;
 use App\Models\SsoSession;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -20,10 +22,10 @@ class SsoSessionSeeder extends Seeder
                 'name' => 'Budi Santoso',
                 'email' => 'budi@sttcipasung.ac.id',
                 'password' => Hash::make('password123'),
-                'role' => 'mahasiswa',
                 'status' => 'active',
             ]
         );
+        $this->syncRole($mahasiswa, RoleEnum::Mahasiswa);
 
         foreach (['siakad', 'lms', 'blog'] as $app) {
             SsoSession::factory()
@@ -33,17 +35,24 @@ class SsoSessionSeeder extends Seeder
         }
 
         // User demo berstatus suspended (untuk manual test AC 4)
-        User::firstOrCreate(
+        $suspended = User::firstOrCreate(
             ['identifier' => '2201234999'],
             [
                 'name' => 'Dosen Ditangguhkan',
                 'email' => 'suspended@sttcipasung.ac.id',
                 'password' => Hash::make('password123'),
-                'role' => 'dosen',
                 'status' => 'suspended',
             ]
         );
+        $this->syncRole($suspended, RoleEnum::Dosen);
 
         $this->command->info('Seed selesai: Budi Santoso punya 3 sesi aktif (siakad/lms/blog). Akun suspended tersedia untuk test AC4.');
+    }
+
+    private function syncRole(User $user, RoleEnum $role): void
+    {
+        $user->roles()->syncWithoutDetaching(
+            Role::where('slug', $role->value)->value('id')
+        );
     }
 }
