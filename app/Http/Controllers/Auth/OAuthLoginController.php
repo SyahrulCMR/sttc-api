@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Actions\Auth\LoginThrottle;
+use App\Enums\AuditEvent;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\OAuthLoginRequest;
 use App\Models\User;
+use App\Support\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +23,10 @@ use Illuminate\View\View;
  */
 class OAuthLoginController extends Controller
 {
-    public function __construct(private readonly LoginThrottle $throttle) {}
+    public function __construct(
+        private readonly LoginThrottle $throttle,
+        private readonly AuditLogger $audit,
+    ) {}
 
     public function show(): View
     {
@@ -43,6 +48,7 @@ class OAuthLoginController extends Controller
             }
 
             $this->throttle->recordFailure($identifier, $ip);
+            $this->audit->record(AuditEvent::LoginFailed, $user, $identifier);
 
             throw ValidationException::withMessages([
                 'identifier' => 'NIM/NIDN atau kata sandi yang Anda masukkan salah.',
@@ -51,16 +57,18 @@ class OAuthLoginController extends Controller
 
         $this->assertAccountUsable($user);
 
-        // --- SEAM 2FA (task 1b-1) -----------------------------------------------
-        // Titik tunggal: kredensial valid, sebelum sesi login dibuat & authorization
-        // code diterbitkan. 1b-1 menyisipkan step-up TOTP untuk role sensitif di sini.
-        $this->challengeTwoFactorIfRequired($user, $request);
-        // ----------------------------------------------------------------------
+        // --- SEAM 2FA: kredensial valid, sebelum sesi login & authorization code ---
+        if ($redirect = $this->challengeTwoFactorIfRequired($user, $request)) {
+            $this->audit->record(AuditEvent::TwoFactorChallenged, $user);
+
+            return $redirect;
+        }
 
         $this->throttle->clear($identifier, $ip);
 
         Auth::login($user, remember: false);
         $request->session()->regenerate();
+        $this->audit->record(AuditEvent::LoginSuccess, $user);
 
         return redirect()->intended('/');
     }
@@ -81,10 +89,23 @@ class OAuthLoginController extends Controller
     }
 
     /**
-     * Stub untuk Sprint 1a — diisi pada 1b-1 (step-up TOTP role sensitif).
+     * Step-up TOTP untuk role sensitif. Mengembalikan redirect ke enrollment
+     * (bila belum terdaftar) atau ke challenge; null bila 2FA tidak diperlukan.
      */
-    private function challengeTwoFactorIfRequired(User $user, Request $request): void
+    private function challengeTwoFactorIfRequired(User $user, Request $request): ?RedirectResponse
     {
-        // no-op (1a)
+        if (! $user->twoFactorRequired()) {
+            return null;
+        }
+
+        $request->session()->put('pending_2fa_user_id', $user->id);
+
+        if (! $user->hasTwoFactorEnabled()) {
+            return redirect()->route('two-factor.enroll');
+        }
+
+        $this->throttle->assertTwoFactorNotLocked($user->identifier);
+
+        return redirect()->route('two-factor.challenge');
     }
 }

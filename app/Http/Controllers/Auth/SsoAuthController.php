@@ -3,17 +3,21 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Actions\Auth\LoginThrottle;
+use App\Enums\AuditEvent;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Models\SsoSession;
 use App\Models\SsoToken;
 use App\Models\User;
+use App\Support\AuditLogger;
+use App\Support\TokenDenyList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Laravel\Passport\Passport;
 
 class SsoAuthController extends Controller
 {
@@ -165,6 +169,11 @@ class SsoAuthController extends Controller
             auth()->logout();
         }
 
+        // Cabut token OAuth (Passport) + deny-list (di atas token revocation Passport).
+        $this->revokeOAuthTokens($user);
+        app(TokenDenyList::class)->revokeAllForUser($user->id);
+        app(AuditLogger::class)->record(AuditEvent::Logout, $user, context: ['channel' => 'back-channel', 'app' => $request->app]);
+
         $sessions = SsoSession::where('user_id', $user->id)->get();
 
         foreach ($sessions as $session) {
@@ -185,5 +194,28 @@ class SsoAuthController extends Controller
         SsoSession::where('user_id', $user->id)->delete();
 
         return response()->json(['logged_out' => true]);
+    }
+
+    /**
+     * Cabut seluruh access + refresh token Passport milik user.
+     */
+    private function revokeOAuthTokens(User $user): void
+    {
+        $tokenIds = Passport::token()->newQuery()
+            ->where('user_id', $user->getKey())
+            ->where('revoked', false)
+            ->pluck('id');
+
+        if ($tokenIds->isEmpty()) {
+            return;
+        }
+
+        Passport::token()->newQuery()
+            ->whereIn('id', $tokenIds)
+            ->update(['revoked' => true]);
+
+        Passport::refreshToken()->newQuery()
+            ->whereIn('access_token_id', $tokenIds)
+            ->update(['revoked' => true]);
     }
 }

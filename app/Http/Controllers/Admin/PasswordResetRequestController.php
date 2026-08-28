@@ -16,7 +16,8 @@ class PasswordResetRequestController extends Controller
     public function index()
     {
         $requests = PasswordResetRequest::with('user')
-            ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
+            // portable (pgsql + sqlite): pending dulu, lalu approved, lalu rejected
+            ->orderByRaw("CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END")
             ->latest()
             ->paginate(15);
 

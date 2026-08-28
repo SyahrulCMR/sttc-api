@@ -18,6 +18,13 @@ return [
     // Bila store tidak bisa dihubungi (Redis down) -> jangan blokir login (fail-open) + log.
     'fail_open' => (bool) env('LOGIN_THROTTLE_FAIL_OPEN', true),
 
+    // Prosedur break-glass Super Admin (config/sprint-1-plan.md §5.5).
+    // Command `sso:break-glass` menolak jalan kecuali ini true (di-set hanya di server).
+    'break_glass_enabled' => (bool) env('BREAK_GLASS_ENABLED', false),
+
+    // Jam sejak break-glass sebelum akun dikunci bila belum remediasi.
+    'break_glass_relock_hours' => (int) env('BREAK_GLASS_RELOCK_HOURS', 24),
+
     'layers' => [
         // L1 — brute-force normal: per (identifier + IP)
         'identifier_ip' => [

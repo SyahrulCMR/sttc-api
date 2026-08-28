@@ -40,6 +40,7 @@ class EnsureUserHasRole
     private function resolveActiveRole(Request $request, User $user): ?Role
     {
         $candidate = $request->attributes->get('active_role')
+            ?? $this->activeRoleFromBearer($request)
             ?? ($request->hasSession() ? $request->session()->get('active_role') : null);
 
         if (is_string($candidate) && $user->hasRole($candidate)) {
@@ -51,5 +52,21 @@ class EnsureUserHasRole
         }
 
         return null;
+    }
+
+    private function activeRoleFromBearer(Request $request): ?string
+    {
+        $token = $request->bearerToken();
+
+        if ($token === null || substr_count($token, '.') !== 2) {
+            return null;
+        }
+
+        $claims = json_decode(
+            base64_decode(strtr(explode('.', $token)[1], '-_', '+/')) ?: '{}',
+            true,
+        ) ?: [];
+
+        return is_string($claims['active_role'] ?? null) ? $claims['active_role'] : null;
     }
 }

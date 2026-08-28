@@ -5,12 +5,18 @@ use App\Http\Controllers\Auth\OAuthLoginController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RoleContextController;
 use App\Http\Controllers\Auth\SsoAuthController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\OAuth\JwksController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// JWKS — kunci publik untuk verifikasi token lokal di resource server.
+Route::get('/oauth/jwks', JwksController::class)->name('oauth.jwks');
 
 // --- SSO opaque lama (koeksistensi, dihapus setelah Passport stabil) ---
 Route::get('/sso/login', [SsoAuthController::class, 'showLogin'])->name('sso.login');
@@ -24,6 +30,14 @@ Route::middleware('guest')->group(function () {
     Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
     Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
 });
+
+// --- 2FA step-up / enrollment (self-guard via session pending_2fa_user_id atau user login) ---
+Route::get('/two-factor/challenge', [TwoFactorChallengeController::class, 'show'])->name('two-factor.challenge');
+Route::post('/two-factor/challenge', [TwoFactorChallengeController::class, 'store']);
+Route::get('/two-factor/enroll', [TwoFactorController::class, 'create'])->name('two-factor.enroll');
+Route::post('/two-factor/enroll', [TwoFactorController::class, 'store']);
+Route::get('/two-factor/recovery-codes', [TwoFactorController::class, 'recoveryCodes'])->name('two-factor.recovery-codes');
+Route::post('/two-factor/recovery-codes', [TwoFactorController::class, 'acknowledge']);
 
 // --- Konteks role (multi-role picker + perpindahan tanpa login ulang) ---
 Route::middleware('auth')->group(function () {

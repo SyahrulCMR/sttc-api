@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\OAuthClient;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Laravel\Passport\ClientRepository;
@@ -82,4 +83,35 @@ function decodeJwtPayload(string $jwt): array
     [, $payload] = explode('.', $jwt);
 
     return json_decode(base64_decode(strtr($payload, '-_', '+/')), true);
+}
+
+/**
+ * Terbitkan access token OAuth untuk $user lewat alur PKCE, dengan role aktif opsional.
+ */
+function issueAccessToken(object $test, User $user, ?string $activeRole = null): string
+{
+    $client = newAuthCodeClient();
+    [$verifier, $challenge] = pkcePair();
+
+    $test->actingAs($user);
+    if ($activeRole !== null) {
+        $test->withSession(['active_role' => $activeRole]);
+    }
+
+    parse_str((string) parse_url((string) $test->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $client->id,
+        'redirect_uri' => 'https://client.test/callback',
+        'response_type' => 'code',
+        'code_challenge' => $challenge,
+        'code_challenge_method' => 'S256',
+    ]))->headers->get('Location'), PHP_URL_QUERY), $params);
+
+    return $test->post('/oauth/token', [
+        'grant_type' => 'authorization_code',
+        'client_id' => $client->id,
+        'client_secret' => $client->plainSecret,
+        'redirect_uri' => 'https://client.test/callback',
+        'code' => $params['code'],
+        'code_verifier' => $verifier,
+    ])->json('access_token');
 }

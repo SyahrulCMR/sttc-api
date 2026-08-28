@@ -51,6 +51,7 @@ class AccessToken implements AccessTokenEntityInterface
         $now = new DateTimeImmutable;
 
         return $this->jwtConfiguration->builder()
+            ->withHeader('kid', app(JwksKey::class)->kid())
             ->issuedBy((string) config('app.url'))
             ->permittedFor($this->getClient()->getIdentifier())
             ->identifiedBy($this->getIdentifier())
@@ -59,6 +60,9 @@ class AccessToken implements AccessTokenEntityInterface
             ->expiresAt($this->getExpiryDateTime())
             ->relatedTo($this->getSubjectIdentifier())
             ->withClaim('scopes', $this->getScopes())
+            ->withClaim('identifier', $claims['identifier'])
+            ->withClaim('name', $claims['name'])
+            ->withClaim('email', $claims['email'])
             ->withClaim('roles', $claims['roles'])
             ->withClaim('active_role', $this->activeRoleFromScopes())
             ->withClaim('status', $claims['status'])

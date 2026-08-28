@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\BusinessException;
+use App\Http\Middleware\EnsureTokenNotRevoked;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\ResolveActiveRole;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Sanctum is route-scoped via auth:sanctum, no global middleware needed.
         $middleware->alias([
             'role' => EnsureUserHasRole::class,
+            'token.not.revoked' => EnsureTokenNotRevoked::class,
         ]);
 
         // Menentukan role aktif + injeksi scope `role:<slug>` sebelum Passport

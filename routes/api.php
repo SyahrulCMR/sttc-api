@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\UserRoleController;
+use App\Http\Controllers\Api\V1\UserTwoFactorController;
 use App\Http\Controllers\Auth\SsoAuthController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,12 +17,21 @@ Route::prefix('v1')->group(function () {
     // Route::post('auth/register', [AuthController::class, 'register']);
     Route::post('auth/login', [AuthController::class, 'login']);
 
-    // Authenticated routes
+    // Authenticated routes (Sanctum PAT lama)
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('auth/me', [AuthController::class, 'me']);
 
         Route::apiResource('users', UserController::class);
+    });
+
+    // Manajemen role & 2FA oleh Super Admin (token OAuth, active_role=super-admin).
+    Route::middleware(['auth:api', 'role:super-admin'])->group(function () {
+        Route::get('roles', [RoleController::class, 'index']);
+        Route::get('users/{user}/roles', [UserRoleController::class, 'index']);
+        Route::post('users/{user}/roles', [UserRoleController::class, 'store']);
+        Route::delete('users/{user}/roles/{role}', [UserRoleController::class, 'destroy']);
+        Route::post('users/{user}/two-factor/reset', [UserTwoFactorController::class, 'reset']);
     });
 });
 

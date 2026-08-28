@@ -2,6 +2,8 @@
 
 namespace App\Actions\Auth;
 
+use App\Enums\AuditEvent;
+use App\Support\AuditLogger;
 use Illuminate\Cache\RateLimiter;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
@@ -52,6 +54,8 @@ class LoginThrottle
         }
 
         if ($lockedFor > 0) {
+            app(AuditLogger::class)->record(AuditEvent::LoginLocked, identifier: $identifier, context: ['retry_after' => $lockedFor]);
+
             throw ValidationException::withMessages([
                 'identifier' => "Terlalu banyak percobaan login. Coba lagi dalam {$lockedFor} detik.",
             ])->status(429);
@@ -98,11 +102,15 @@ class LoginThrottle
     }
 
     /**
-     * Mitigasi user-enumeration via timing: samakan biaya saat user tidak ditemukan.
+     * Mitigasi user-enumeration via timing: samakan biaya hashing saat user tidak
+     * ditemukan dengan biaya Hash::check() pada user yang ada.
      */
     public function equalizeTiming(): void
     {
-        Hash::check('dummy-password', '$2y$12$........................................................');
+        static $reference = null;
+        $reference ??= password_hash('timing-equalizer', PASSWORD_BCRYPT);
+
+        password_verify('timing-equalizer-mismatch', $reference);
     }
 
     private function key(string $prefix, string ...$parts): string
