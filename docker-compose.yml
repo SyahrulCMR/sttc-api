@@ -1,0 +1,49 @@
+name: sttc-api
+
+# Backing services untuk sttc-api (IAM/SSO).
+# Runtime aplikasi (PHP-FPM) TIDAK dijalankan di sini — lihat ADR-0001.
+#
+# Penggunaan:
+#   Lokal  : docker compose up -d              (otomatis merge docker-compose.override.yml)
+#   Prod   : docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Variabel dibaca dari .env pada direktori ini (DB_*, REDIS_*).
+
+services:
+  pgsql:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-sttc_api}
+      POSTGRES_USER: ${DB_USERNAME:-sttc}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - pgsql-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-sttc} -d ${DB_DATABASE:-sttc_api}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    # appendonly=yes  -> deny-list & throttle survive restart
+    # maxmemory-policy=noeviction -> kunci keamanan (deny-list) tidak dibuang diam-diam
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory-policy
+      - noeviction
+      - --requirepass
+      - ${REDIS_PASSWORD:-secret}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-secret}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  pgsql-data:
+  redis-data:

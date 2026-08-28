@@ -7,7 +7,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // Public auth routes
-    Route::post('auth/register', [AuthController::class, 'register']);
+    //
+    // Self-service register DINONAKTIFKAN sejak Sprint 1 (Epic 1 IAM/SSO): pembuatan akun
+    // terpusat lewat IAM (provisioning), bukan pendaftaran mandiri.
+    // Controller & AuthService::register sengaja dipertahankan. Lihat epics/sprint-1-plan.md.
+    // Route::post('auth/register', [AuthController::class, 'register']);
     Route::post('auth/login', [AuthController::class, 'login']);
 
     // Authenticated routes

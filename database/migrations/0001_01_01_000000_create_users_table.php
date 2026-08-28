@@ -55,8 +55,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        // sso_tokens punya FK ke users -> harus di-drop lebih dulu.
+        Schema::dropIfExists('sso_tokens');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('users');
     }
 };

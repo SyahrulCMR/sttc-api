@@ -2,22 +2,15 @@
 
 use App\Models\User;
 
-it('registers a new user and returns a token', function () {
-    $response = $this->postJson('/api/v1/auth/register', [
+it('has the self-service register endpoint disabled', function () {
+    $this->postJson('/api/v1/auth/register', [
         'name' => 'Jane Doe',
         'email' => 'jane@example.com',
         'password' => 'Secret123!',
         'password_confirmation' => 'Secret123!',
-    ]);
+    ])->assertNotFound();
 
-    $response->assertCreated()
-        ->assertJsonStructure([
-            'success',
-            'message',
-            'data' => ['user' => ['id', 'name', 'email'], 'token', 'token_type'],
-        ]);
-
-    expect(User::where('email', 'jane@example.com')->exists())->toBeTrue();
+    expect(User::where('email', 'jane@example.com')->exists())->toBeFalse();
 });
 
 it('rejects invalid login credentials', function () {

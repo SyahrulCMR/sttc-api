@@ -19,7 +19,7 @@ class SsoAuthController extends Controller
     public function showLogin(Request $request)
     {
         $app = $request->query('app');
-        abort_unless(array_key_exists($app, config('sso.apps')), 400, 'Aplikasi tidak dikenal');
+        abort_unless(is_string($app) && array_key_exists($app, config('sso.apps')), 400, 'Aplikasi tidak dikenal');
 
         session(['sso_app' => $app]);
 
@@ -31,10 +31,10 @@ class SsoAuthController extends Controller
         $request->validate([
             'identifier' => 'required|string',
             'password' => 'required|string',
-            'app'        => 'required|string',
+            'app' => 'required|string',
         ]);
 
-        $throttleKey = 'login:' . $request->identifier . '|' . $request->ip();
+        $throttleKey = 'login:'.$request->identifier.'|'.$request->ip();
 
         // proteksi brute-force, pesan jelas kalau kena limit
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
@@ -78,7 +78,7 @@ class SsoAuthController extends Controller
             'expires_at' => now()->addSeconds(config('sso.token_ttl')),
         ]);
 
-        return redirect(config("sso.apps.$app.redirect_url") . '?token=' . $token->token);
+        return redirect(config("sso.apps.$app.redirect_url").'?token='.$token->token);
     }
 
     public function verifyToken(Request $request)

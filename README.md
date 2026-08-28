@@ -39,9 +39,27 @@ Binding interface ke implementasi diatur di [`app/Providers/RepositoryServicePro
 composer install
 cp .env.example .env
 php artisan key:generate
+
+# Backing services (PostgreSQL 17 + Redis 7). Aplikasi tetap PHP-FPM/`artisan serve` di host (ADR-0001).
+docker compose up -d
+
 php artisan migrate
 php artisan serve
 ```
+
+### Backing services (Docker)
+
+| Service | Host port | Kredensial default (lokal) |
+|---|---|---|
+| PostgreSQL 17 | `5433` (internal 5432) | user `sttc` / pass `secret` / db `sttc_api` |
+| Redis 7 | `6379` | pass `secret` (`appendonly`, `noeviction`) |
+
+- Port PostgreSQL sengaja `5433` di host untuk menghindari bentrok dengan PostgreSQL native.
+- Redis DB 1 = cache, DB 2 = throttle/lockout (store `throttle`, tidak ikut `cache:clear`).
+- Session & queue tetap di database (lihat `../epics/sprint-1-plan.md` §5.3).
+- Produksi: `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` — wajib set
+  `DB_PASSWORD` & `REDIS_PASSWORD` kuat via environment.
+- `phpredis` tidak diasumsikan ada; klien default `predis` (`REDIS_CLIENT=predis`).
 
 Endpoint API tersedia di prefix `/api/v1/...` dengan autentikasi **Laravel Sanctum** (token-based).
 

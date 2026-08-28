@@ -78,6 +78,14 @@ return [
             'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
         ],
 
+        // Store khusus rate-limit / lockout login & (nanti) deny-list revocation.
+        // Selalu Redis, connection terpisah agar tidak ikut ter-flush saat cache:clear.
+        'throttle' => [
+            'driver' => 'redis',
+            'connection' => 'throttle',
+            'lock_connection' => 'throttle',
+        ],
+
         'dynamodb' => [
             'driver' => 'dynamodb',
             'key' => env('AWS_ACCESS_KEY_ID'),

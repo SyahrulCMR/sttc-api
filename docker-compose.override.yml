@@ -1,0 +1,11 @@
+# Lokal/dev — otomatis di-merge oleh `docker compose up`.
+# Membuka port ke host supaya PHP-FPM native / artisan bisa konek.
+
+services:
+  pgsql:
+    ports:
+      - "${DB_PORT:-5432}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PORT:-6379}:6379"

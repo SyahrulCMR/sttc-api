@@ -1,0 +1,18 @@
+# Prod — dipakai eksplisit:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# WAJIB: set DB_PASSWORD & REDIS_PASSWORD kuat via environment / secret manager.
+# Port hanya di-bind ke loopback — PHP-FPM native di host yang mengaksesnya.
+
+services:
+  pgsql:
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+
+  redis:
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
