@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\UserRoleController;
 use App\Http\Controllers\Api\V1\UserTwoFactorController;
-use App\Http\Controllers\Auth\SsoAuthController;
+use App\Http\Controllers\Auth\SsoBackChannelController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -35,8 +35,8 @@ Route::prefix('v1')->group(function () {
     });
 });
 
-Route::post('/sso/register-session', [SsoAuthController::class, 'registerSession'])->middleware('throttle:60,1');
-Route::post('/sso/logout', [SsoAuthController::class, 'broadcastLogout'])->middleware('throttle:30,1');
-// server-to-server, sebaiknya di-throttle dan tidak pakai session/csrf
-Route::post('/sso/verify', [SsoAuthController::class, 'verifyToken'])
-    ->middleware('throttle:30,1');
+// Back-channel SSO (server-to-server): pendaftaran sesi + single-logout.
+// Alur opaque lama (`/sso/verify`) dihapus di Sprint 2 (task 2b-1) — verifikasi token
+// kini lokal via JWKS di resource server.
+Route::post('/sso/register-session', [SsoBackChannelController::class, 'registerSession'])->middleware('throttle:60,1');
+Route::post('/sso/logout', [SsoBackChannelController::class, 'broadcastLogout'])->middleware('throttle:30,1');

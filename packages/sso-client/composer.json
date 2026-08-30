@@ -1,0 +1,44 @@
+{
+    "name": "sttc/sso-client",
+    "description": "Klien SSO (OAuth2 Authorization Code + PKCE, verifikasi token lokal via JWKS) untuk resource server ekosistem STTC (sttc-siakad, sttc-website).",
+    "type": "library",
+    "license": "proprietary",
+    "keywords": ["sso", "oauth2", "pkce", "jwt", "sttc"],
+    "require": {
+        "php": "^8.3",
+        "ext-json": "*",
+        "firebase/php-jwt": "^7.1",
+        "illuminate/contracts": "^13.0",
+        "illuminate/http": "^13.0",
+        "illuminate/support": "^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^11.0",
+        "pestphp/pest": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sttc\\SsoClient\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Sttc\\SsoClient\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Sttc\\SsoClient\\SsoClientServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

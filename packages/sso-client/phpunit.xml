@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true">
+    <testsuites>
+        <testsuite name="sso-client">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="SSO_SERVER_URL" value="http://sso.test"/>
+        <env name="SSO_CLIENT_ID" value="test-client"/>
+        <env name="SSO_CLIENT_SECRET" value="test-secret"/>
+        <env name="SSO_REDIRECT_URI" value="http://rs.test/sso/callback"/>
+        <env name="SSO_APP_NAME" value="rs-test"/>
+        <env name="SSO_APP_SECRET" value="backchannel-secret"/>
+    </php>
+</phpunit>

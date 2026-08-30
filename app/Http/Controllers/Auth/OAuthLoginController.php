@@ -19,7 +19,7 @@ use Illuminate\View\View;
 /**
  * Login untuk alur OAuth2 Authorization Code (`/oauth/authorize`).
  *
- * Terpisah dari SsoAuthController (SSO opaque lama) yang masih koeksistensi.
+ * Satu-satunya form login SSO sejak alur opaque lama dihapus (Sprint 2 task 2b-1).
  */
 class OAuthLoginController extends Controller
 {

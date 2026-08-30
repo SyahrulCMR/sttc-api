@@ -33,7 +33,7 @@ class PassportClientSeeder extends Seeder
             'secret_env' => 'WEBSITE_CLIENT_SECRET',
             'secret_default' => 'sttc-website-local-dev-secret',
             'redirect_env' => 'WEBSITE_REDIRECT_URI',
-            'redirect_default' => 'http://localhost:8002/auth/callback',
+            'redirect_default' => 'http://localhost:8002/sso/callback',
         ],
         [
             'id' => '01999999-0000-7000-8000-0000000000a3',

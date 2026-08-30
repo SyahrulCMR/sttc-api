@@ -6,7 +6,7 @@ confidential, Authorization Code + PKCE). Tidak ada onboarding self-service (ADR
 | Client | Dipakai oleh | Grant | redirect_uri (lokal) |
 |---|---|---|---|
 | `sttc-siakad` | SIAKAD (resource server) | `authorization_code`, `refresh_token` | `http://localhost:8001/sso/callback` |
-| `sttc-website` | Website/CMS (resource server) | `authorization_code`, `refresh_token` | `http://localhost:8002/auth/callback` |
+| `sttc-website` | Website/CMS (resource server) | `authorization_code`, `refresh_token` | `http://localhost:8002/sso/callback` |
 
 Semua client **first-party** (`owner` NULL) → `OAuthClient::skipsAuthorization()` true →
 layar consent dilewati.

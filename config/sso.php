@@ -2,35 +2,34 @@
 
 /*
 |--------------------------------------------------------------------------
-| DEPRECATED — SSO lama (opaque token + secret statis per app)
+| Konfigurasi back-channel SSO (single-logout server-to-server)
 |--------------------------------------------------------------------------
 |
-| Digantikan bertahap oleh Laravel Passport (oauth_clients) sejak Sprint 1
-| Epic 1 — lihat adr/0002 & epics/sprint-1-plan.md.
+| Otentikasi memakai Laravel Passport (oauth_clients) — lihat adr/0002.
+| File ini HANYA untuk kanal back-channel `SsoBackChannelController`
+| (registerSession + broadcastLogout) yang dipakai `SsoSession` untuk SLO.
+| Alur opaque token lama (SsoToken / /sso/login / /sso/verify) sudah dihapus (task 2b-1).
 |
-| MASIH DIPAKAI (koeksistensi): SsoAuthController::verifyToken / registerSession
-| / broadcastLogout. `SsoSession` + `broadcastLogout` akan dipertahankan permanen
-| sebagai back-channel logout; sisanya dihapus setelah Passport terbukti stabil.
+| Kunci `apps.*` = client_id OAuth (sama dengan yang dikirim resource server pada
+| field `app`). `secret` = shared secret back-channel yang dipegang RS sebagai
+| `SSO_APP_SECRET`. `logout_webhook` = endpoint force-logout milik RS.
 |
 */
 
 return [
+
     'apps' => [
-        'siakad' => [
-            'redirect_url' => env('SIAKAD_URL').'/sso/callback',
-            'logout_webhook' => env('SIAKAD_URL').'/api/sso/force-logout',
-            'secret' => env('SIAKAD_SECRET'),
+
+        'sttc-siakad' => [
+            'logout_webhook' => env('SIAKAD_LOGOUT_WEBHOOK', rtrim((string) env('SIAKAD_URL', 'http://127.0.0.1:8001'), '/').'/sso/force-logout'),
+            'secret' => env('SIAKAD_BACKCHANNEL_SECRET'),
         ],
-        'lms' => [
-            'redirect_url' => env('LMS_URL').'/sso/callback',
-            'logout_webhook' => env('LMS_URL').'/api/sso/force-logout',
-            'secret' => env('LMS_SECRET'),
+
+        'sttc-website' => [
+            'logout_webhook' => env('WEBSITE_LOGOUT_WEBHOOK', rtrim((string) env('WEBSITE_URL', 'http://127.0.0.1:8002'), '/').'/sso/force-logout'),
+            'secret' => env('WEBSITE_BACKCHANNEL_SECRET'),
         ],
-        'blog' => [
-            'redirect_url' => env('BLOG_URL').'/sso/callback',
-            'logout_webhook' => env('BLOG_URL').'/api/sso/force-logout',
-            'secret' => env('BLOG_SECRET'),
-        ],
+
     ],
-    'token_ttl' => 30,
+
 ];

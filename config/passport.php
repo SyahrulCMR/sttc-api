@@ -51,9 +51,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | Lihat epics/sprint-1-plan.md §5.1.
-    | - access  : 15 menit untuk semua role (role sensitif dilindungi deny-list).
-    | - refresh : 14 hari (role umum). TTL 8 jam khusus role sensitif = Sprint 1b.
-    | - auth code: default Passport 10 menit (PT10M, hardcoded di package) — masih
+    | - access           : 15 menit untuk semua role (role sensitif dilindungi deny-list).
+    | - refresh          : 14 hari (role umum).
+    | - refresh_sensitive: 8 jam untuk token yang membawa scope role sensitif
+    |   (super-admin / admin-keuangan). Ditegakkan oleh App\Passport\RefreshTokenRepository
+    |   (Sprint 2 task 2c-1). Rotasi refresh (revoke-on-use) = default league v9.
+    | - auth code        : default Passport 10 menit (PT10M, hardcoded di package) — masih
     |   sesuai OAuth BCP, single-use. Lihat adr/0003.
     |
     */
@@ -61,6 +64,7 @@ return [
     'ttl' => [
         'access' => (int) env('PASSPORT_ACCESS_TOKEN_TTL', 15),
         'refresh' => (int) env('PASSPORT_REFRESH_TOKEN_TTL', 60 * 24 * 14),
+        'refresh_sensitive' => (int) env('PASSPORT_REFRESH_TOKEN_TTL_SENSITIVE', 8 * 60),
     ],
 
 ];

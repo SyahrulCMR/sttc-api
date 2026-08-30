@@ -7,14 +7,13 @@ use Illuminate\Validation\ValidationException;
 
 function failLogin(object $test, string $identifier = 'NIM01'): TestResponse
 {
-    return $test->post('/sso/login', [
+    return $test->post('/login', [
         'identifier' => $identifier,
         'password' => 'definitely-wrong',
-        'app' => 'siakad',
     ]);
 }
 
-it('locks the SSO login form after the L1 (identifier + IP) threshold', function () {
+it('locks the login form after the L1 (identifier + IP) threshold', function () {
     User::factory()->create(['identifier' => 'NIM01', 'password' => bcrypt('Correct1!')]);
 
     foreach (range(1, 5) as $ignored) {
@@ -22,7 +21,7 @@ it('locks the SSO login form after the L1 (identifier + IP) threshold', function
     }
 
     // Kredensial benar pun ditolak karena sudah terkunci.
-    $this->post('/sso/login', ['identifier' => 'NIM01', 'password' => 'Correct1!', 'app' => 'siakad'])
+    $this->post('/login', ['identifier' => 'NIM01', 'password' => 'Correct1!'])
         ->assertSessionHasErrors('identifier');
 
     expect(session('errors')->first('identifier'))->toContain('Coba lagi dalam');
@@ -35,8 +34,11 @@ it('resets L1 for the identifier after a fully successful login', function () {
         failLogin($this, 'NIM02')->assertSessionHasErrors('identifier');
     }
 
-    $this->post('/sso/login', ['identifier' => 'NIM02', 'password' => 'Correct1!', 'app' => 'siakad'])
+    $this->post('/login', ['identifier' => 'NIM02', 'password' => 'Correct1!'])
         ->assertRedirect();
+
+    // `/login` ada di grup `guest`; keluarkan sesi agar bisa mencoba form lagi.
+    auth()->logout();
 
     // Counter direset -> 4 kegagalan lagi masih belum mengunci.
     foreach (range(1, 4) as $ignored) {

@@ -4,7 +4,6 @@ use App\Http\Controllers\Admin\PasswordResetRequestController;
 use App\Http\Controllers\Auth\OAuthLoginController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RoleContextController;
-use App\Http\Controllers\Auth\SsoAuthController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\OAuth\JwksController;
@@ -17,10 +16,6 @@ Route::get('/', function () {
 
 // JWKS — kunci publik untuk verifikasi token lokal di resource server.
 Route::get('/oauth/jwks', JwksController::class)->name('oauth.jwks');
-
-// --- SSO opaque lama (koeksistensi, dihapus setelah Passport stabil) ---
-Route::get('/sso/login', [SsoAuthController::class, 'showLogin'])->name('sso.login');
-Route::post('/sso/login', [SsoAuthController::class, 'login'])->name('sso.login.submit');
 
 // --- Login untuk alur OAuth authorize (Passport) ---
 Route::middleware('guest')->group(function () {

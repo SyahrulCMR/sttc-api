@@ -40,28 +40,26 @@ it('hides two-factor columns from array output', function () {
     expect($user->two_factor_recovery_codes)->toBe(['code-a', 'code-b']);
 });
 
-it('blocks SSO login for a suspended account', function () {
+it('blocks login for a suspended account', function () {
     User::factory()->suspended()->create([
         'identifier' => 'SUS123',
         'password' => bcrypt('Correct123!'),
     ]);
 
-    $this->post('/sso/login', [
+    $this->post('/login', [
         'identifier' => 'SUS123',
         'password' => 'Correct123!',
-        'app' => 'siakad',
     ])->assertSessionHasErrors('identifier');
 });
 
-it('blocks SSO login for an inactive account', function () {
+it('blocks login for an inactive account', function () {
     User::factory()->inactive()->create([
         'identifier' => 'INA123',
         'password' => bcrypt('Correct123!'),
     ]);
 
-    $this->post('/sso/login', [
+    $this->post('/login', [
         'identifier' => 'INA123',
         'password' => 'Correct123!',
-        'app' => 'siakad',
     ])->assertSessionHasErrors('identifier');
 });

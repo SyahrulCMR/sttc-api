@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Enums\Role;
 use App\Models\OAuthClient;
 use App\Passport\AccessToken;
+use App\Passport\RefreshTokenRepository;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
@@ -18,6 +19,15 @@ use Laravel\Passport\Passport;
  */
 class PassportServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        // TTL refresh per-role: pangkas jadi 8 jam untuk scope role sensitif (task 2c-1).
+        $this->app->bind(
+            \Laravel\Passport\Bridge\RefreshTokenRepository::class,
+            RefreshTokenRepository::class,
+        );
+    }
+
     public function boot(): void
     {
         Passport::$passwordGrantEnabled = false;
