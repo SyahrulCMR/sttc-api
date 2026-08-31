@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\PasswordResetRequestController;
 use App\Http\Controllers\Auth\OAuthLoginController;
+use App\Http\Controllers\Auth\OAuthLogoutController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RoleContextController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
@@ -36,6 +37,8 @@ Route::post('/two-factor/recovery-codes', [TwoFactorController::class, 'acknowle
 
 // --- Konteks role (multi-role picker + perpindahan tanpa login ulang) ---
 Route::middleware('auth')->group(function () {
+    Route::match(['get', 'post'], '/logout', OAuthLogoutController::class)->name('logout');
+
     Route::get('/select-role', [RoleContextController::class, 'select'])->name('role.select');
     Route::post('/select-role', [RoleContextController::class, 'store']);
     Route::get('/switch-role', [RoleContextController::class, 'switch'])->name('role.switch');

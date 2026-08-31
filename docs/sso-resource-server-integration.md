@@ -55,6 +55,13 @@ Sisi `sttc-api` (`config/sso.php` + `.env`): `SIAKAD_URL` / `WEBSITE_URL` (base 
 
 > Gunakan `127.0.0.1` (bukan `localhost`) untuk URL server-to-server di dev — `php artisan serve`
 > mengikat ke `127.0.0.1` dan `localhost` bisa gagal resolve ke `::1` di Windows.
+>
+> **Browser vs server-to-server (BUG-0007):** cookie session di-scope per-hostname —
+> `127.0.0.1` dan `localhost` dianggap domain berbeda. Selalu buka RS di browser lewat
+> hostname yang **sama persis** dengan host di `SSO_REDIRECT_URI`, kalau tidak `state`/PKCE
+> verifier yang disimpan saat `/auth/redirect` tak akan ketemu saat callback → `400 Sesi SSO
+> tidak ditemukan`. URL server-to-server (`SSO_SERVER_URL`, `SIAKAD_URL`, `WEBSITE_URL`) boleh
+> tetap `127.0.0.1`; yang penting host redirect-browser konsisten dengan yang didaftarkan.
 
 ---
 
@@ -66,7 +73,9 @@ Route::get('/auth/redirect', [OAuthClientController::class, 'redirect'])->name('
 Route::get('/sso/callback',  [OAuthClientController::class, 'callback'])->name('sso.callback');
 Route::match(['get','post'], '/logout', [LogoutController::class, 'logout'])->name('logout');
 
-// webhook force-logout dari sttc-api (api.php ATAU web.php dgn CSRF-except 'sso/force-logout')
+// webhook force-logout dari sttc-api — WAJIB di web.php dgn path `/sso/force-logout`
+// (TANPA prefix /api) + CSRF-except 'sso/force-logout'. Ini path yang dibangun
+// sttc-api/config/sso.php untuk SEMUA app. Menaruhnya di api.php = 404 senyap (BUG-0002).
 Route::post('/sso/force-logout', [SsoWebhookController::class, 'forceLogout'])->middleware('throttle:30,1');
 
 // modul terproteksi

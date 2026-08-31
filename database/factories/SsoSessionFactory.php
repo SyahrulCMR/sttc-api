@@ -23,7 +23,7 @@ class SsoSessionFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'app' => fake()->randomElement(['siakad', 'lms', 'blog']),
+            'app' => fake()->randomElement(['sttc-siakad', 'sttc-website']),
             'local_session_id' => Str::random(40),
             'last_seen_at' => now(),
         ];

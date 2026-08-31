@@ -27,7 +27,7 @@ class SsoSessionSeeder extends Seeder
         );
         $this->syncRole($mahasiswa, RoleEnum::Mahasiswa);
 
-        foreach (['siakad', 'lms', 'blog'] as $app) {
+        foreach (array_keys(config('sso.apps')) as $app) {
             SsoSession::factory()
                 ->app($app)
                 ->forUser($mahasiswa)
@@ -46,7 +46,8 @@ class SsoSessionSeeder extends Seeder
         );
         $this->syncRole($suspended, RoleEnum::Dosen);
 
-        $this->command->info('Seed selesai: Budi Santoso punya 3 sesi aktif (siakad/lms/blog). Akun suspended tersedia untuk test AC4.');
+        $apps = implode('/', array_keys(config('sso.apps')));
+        $this->command->info("Seed selesai: Budi Santoso punya sesi aktif ({$apps}). Akun suspended tersedia untuk test AC4.");
     }
 
     private function syncRole(User $user, RoleEnum $role): void

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Support\AuditLogger;
 use App\Support\TokenDenyList;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Laravel\Passport\Passport;
@@ -63,10 +64,11 @@ class SsoBackChannelController extends Controller
 
         $user = User::where('identifier', $request->user_identifier)->firstOrFail();
 
-        // logout juga sesi lokal di SSO server sendiri
-        if (auth()->id() === $user->id) {
-            auth()->logout();
-        }
+        // Akhiri SEMUA sesi web sttc-api milik user ini — bukan hanya sesi request
+        // saat ini (panggilan back-channel ini server-to-server, tidak membawa cookie
+        // browser user, jadi `auth()->id()` tidak akan pernah cocok di skenario nyata).
+        // Pola sama dengan SsoWebhookController::forceLogout() di sisi resource server.
+        DB::table('sessions')->where('user_id', $user->id)->delete();
 
         // Cabut token OAuth (Passport) + deny-list (di atas token revocation Passport).
         $this->revokeOAuthTokens($user);
@@ -86,7 +88,10 @@ class SsoBackChannelController extends Controller
             $secret = config("sso.apps.{$session->app}.secret");
 
             try {
-                Http::timeout(5)->asForm()->post($webhook, [
+                // `->throw()` wajib: Http::post() TIDAK melempar exception untuk
+                // response 4xx/5xx (mis. webhook salah path → 404) tanpa ini, jadi
+                // kegagalan lolos ke blok sukses dan tidak pernah tercatat di log.
+                Http::timeout(5)->asForm()->throw()->post($webhook, [
                     'secret' => $secret,
                     'local_session_id' => $session->local_session_id,
                 ]);

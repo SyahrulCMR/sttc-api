@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sso_sessions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('app');            // siakad|lms|blog
+            $table->string('app');            // client_id OAuth, mis. sttc-siakad|sttc-website (lihat config/sso.php)
             $table->string('local_session_id'); // session id di client app
             $table->timestamp('last_seen_at')->nullable();
             $table->timestamps();

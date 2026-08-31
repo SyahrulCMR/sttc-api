@@ -6,7 +6,9 @@ use App\Models\LoginActivity;
 use App\Models\SsoSession;
 use App\Models\User;
 use App\Support\TokenDenyList;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Laravel\Passport\Passport;
 
 beforeEach(function () {
@@ -16,7 +18,6 @@ beforeEach(function () {
         'sso.apps.sttc-website.secret' => 'website-backchannel',
         'sso.apps.sttc-website.logout_webhook' => 'https://website.test/sso/force-logout',
     ]);
-    Http::fake();
 });
 
 it('resolves per-app back-channel config keyed by OAuth client id', function () {
@@ -46,6 +47,8 @@ it('rejects an unknown app', function () {
 });
 
 it('registers sessions then revokes tokens, force-logs-out OTHER apps and audits', function () {
+    Http::fake();
+
     $user = User::factory()->withRole(Role::Dosen)->create(['identifier' => 'D1']);
     $accessToken = issueAccessToken($this, $user, 'dosen');
     $issuedBefore = now()->subMinute()->getTimestamp();
@@ -77,4 +80,47 @@ it('registers sessions then revokes tokens, force-logs-out OTHER apps and audits
     // Webhook HANYA ke app lain (website), bukan balik ke pemicu (siakad).
     Http::assertSent(fn ($r) => str_contains($r->url(), 'website.test/sso/force-logout'));
     Http::assertNotSent(fn ($r) => str_contains($r->url(), 'siakad.test/sso/force-logout'));
+});
+
+it('destroys the users own sttc-api web sessions on back-channel logout (BUG-0001)', function () {
+    Http::fake();
+
+    $user = User::factory()->withRole(Role::Dosen)->create(['identifier' => 'D1']);
+    $otherUser = User::factory()->withRole(Role::Dosen)->create(['identifier' => 'D2']);
+
+    DB::table('sessions')->insert([
+        ['id' => 'web-sess-1', 'user_id' => $user->id, 'payload' => 'x', 'last_activity' => now()->getTimestamp()],
+        ['id' => 'web-sess-2', 'user_id' => $user->id, 'payload' => 'x', 'last_activity' => now()->getTimestamp()],
+        ['id' => 'other-user', 'user_id' => $otherUser->id, 'payload' => 'x', 'last_activity' => now()->getTimestamp()],
+    ]);
+
+    $this->postJson('/api/sso/logout', [
+        'app' => 'sttc-siakad', 'secret' => 'siakad-backchannel', 'user_identifier' => 'D1',
+    ])->assertOk();
+
+    expect(DB::table('sessions')->where('user_id', $user->id)->count())->toBe(0)
+        ->and(DB::table('sessions')->where('id', 'other-user')->exists())->toBeTrue();
+});
+
+it('logs a warning when a force-logout webhook returns an HTTP error (BUG-0002)', function () {
+    Http::fake([
+        '*website.test/*' => Http::response('not found', 404),
+        '*' => Http::response(),
+    ]);
+    Log::spy();
+
+    User::factory()->withRole(Role::Dosen)->create(['identifier' => 'D1']);
+    $this->postJson('/api/sso/register-session', [
+        'app' => 'sttc-website', 'secret' => 'website-backchannel',
+        'user_identifier' => 'D1', 'local_session_id' => 'website-sess',
+    ])->assertOk();
+
+    // Logout dipicu dari siakad → webhook ke website (yang membalas 404).
+    $this->postJson('/api/sso/logout', [
+        'app' => 'sttc-siakad', 'secret' => 'siakad-backchannel', 'user_identifier' => 'D1',
+    ])->assertOk()->assertJson(['logged_out' => true]);
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn ($message) => str_contains($message, 'SLO gagal broadcast ke sttc-website'))
+        ->once();
 });
